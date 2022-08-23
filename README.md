@@ -1,14 +1,15 @@
-# Welcome to your CDK TypeScript project
+# codepipeline-triggered-by-github-release-with-cdk
 
-This is a blank project for CDK development with TypeScript.
+【AWS CDK】GitHub の Release をトリガーに CodePipeline を起動する
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## 事前準備
 
-## Useful commands
+SecretsManager に GitHub の Webhook 用シークレットトークンを手動で格納する
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+## Deploy
+
+```
+$ cdk deploy codepipeline-triggered-by-github-release-cicd
+```
+
+上記のデプロイが完了した後、GitHub の Webhook を手動で作成する
