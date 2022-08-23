@@ -9,14 +9,16 @@ const projectName = app.node.tryGetContext('projectName');
 const githubOwnerName = app.node.tryGetContext('githubOwnerName');
 const githubRepositoryName = app.node.tryGetContext('githubRepositoryName');
 const githubBranchName = app.node.tryGetContext('githubBranchName');
-const githubTokenName = app.node.tryGetContext('githubTokenName');
-const webhookSecretTokenName = app.node.tryGetContext('webhookSecretTokenName');
+const githubWebhookSecretTokenName = app.node.tryGetContext(
+  'githubWebhookSecretTokenName'
+);
+const codestarConnectionArn = app.node.tryGetContext('codestarConnectionArn');
 
 new CodepipelineTriggeredByGithubReleaseStack(app, `${projectName}-cicd`, {
   projectName,
   githubOwnerName,
   githubRepositoryName,
   githubBranchName,
-  githubTokenName,
-  webhookSecretTokenName,
+  githubWebhookSecretTokenName,
+  codestarConnectionArn,
 });

@@ -1,4 +1,4 @@
-import { Stack, StackProps, SecretValue } from 'aws-cdk-lib';
+import { CfnOutput, Stack, StackProps, SecretValue } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as codeBuild from 'aws-cdk-lib/aws-codebuild';
 import * as codePipeline from 'aws-cdk-lib/aws-codepipeline';
@@ -10,8 +10,8 @@ export interface CodepipelineTriggeredByGithubReleaseStackProps
   githubOwnerName: string;
   githubRepositoryName: string;
   githubBranchName: string;
-  githubTokenName: string;
-  webhookSecretTokenName: string;
+  githubWebhookSecretTokenName: string;
+  codestarConnectionArn: string;
 }
 
 export class CodepipelineTriggeredByGithubReleaseStack extends Stack {
@@ -27,19 +27,26 @@ export class CodepipelineTriggeredByGithubReleaseStack extends Stack {
       githubOwnerName,
       githubRepositoryName,
       githubBranchName,
-      githubTokenName,
-      webhookSecretTokenName,
+      githubWebhookSecretTokenName,
+      codestarConnectionArn,
     } = props;
 
-    // 2022年から SecretManager の値を使用する際に unsafeUnwrap() する必要があるようになった
-    // https://stackoverflow.com/questions/67604825/pass-aws-sm-secret-key-to-lambda-environment-with-cdk#answer-72565446
-    const githubToken =
-      SecretValue.secretsManager(githubTokenName).unsafeUnwrap();
     const webhookSecretToken = SecretValue.secretsManager(
-      webhookSecretTokenName
+      githubWebhookSecretTokenName
     ).unsafeUnwrap();
 
     const sourceArtifact = new codePipeline.Artifact();
+    const sourceAction =
+      new codePipelineActions.CodeStarConnectionsSourceAction({
+        actionName: 'source',
+        owner: githubOwnerName,
+        repo: githubRepositoryName,
+        branch: githubBranchName,
+        connectionArn: codestarConnectionArn,
+        output: sourceArtifact,
+        // Push では起動させない
+        triggerOnPush: false,
+      });
 
     const codeBuildDeployProject = new codeBuild.PipelineProject(
       this,
@@ -49,17 +56,6 @@ export class CodepipelineTriggeredByGithubReleaseStack extends Stack {
         buildSpec: codeBuild.BuildSpec.fromSourceFilename('./buildspec.yml'),
       }
     );
-
-    const sourceAction = new codePipelineActions.GitHubSourceAction({
-      actionName: 'source',
-      owner: githubOwnerName,
-      repo: githubRepositoryName,
-      branch: githubBranchName,
-      oauthToken: new SecretValue(githubToken),
-      output: sourceArtifact,
-      // デフォルトのトリガーを外す
-      trigger: codePipelineActions.GitHubTrigger.NONE,
-    });
 
     const deployAction = new codePipelineActions.CodeBuildAction({
       actionName: 'deploy',
@@ -81,7 +77,7 @@ export class CodepipelineTriggeredByGithubReleaseStack extends Stack {
       ],
     });
 
-    new codePipeline.CfnWebhook(this, 'WebhookResource', {
+    const webhook = new codePipeline.CfnWebhook(this, 'WebhookResource', {
       authentication: 'GITHUB_HMAC',
       authenticationConfiguration: {
         secretToken: webhookSecretToken,
@@ -96,7 +92,12 @@ export class CodepipelineTriggeredByGithubReleaseStack extends Stack {
       targetAction: sourceAction.actionProperties.actionName,
       targetPipeline: deployPipeline.pipelineName,
       targetPipelineVersion: 1,
-      registerWithThirdParty: true,
+      registerWithThirdParty: false,
+      // GitHub 側で Webhook を手動で作成する
+    });
+
+    new CfnOutput(this, 'WebhookUrl', {
+      value: webhook.attrUrl,
     });
   }
 }
