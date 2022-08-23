@@ -13,3 +13,8 @@ $ cdk deploy codepipeline-triggered-by-github-release-cicd
 ```
 
 上記のデプロイが完了した後、GitHub の Webhook を手動で作成する
+
+## 参考
+
+- [GitHub の push 以外の WebHook イベントから CodePipeline を発火させる](https://qiita.com/techneconn/items/cff3e76301006f42c78f)
+- [AWS Pipelines with Github Release trigger in CDK](https://blog.cuckoo.org/aws-pipelines-with-github-release-trigger-in-cdk)
